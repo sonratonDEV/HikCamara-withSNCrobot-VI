@@ -72,6 +72,7 @@ class App:
         self.show_frame_thread = None
         self.serial_read_thread = None
 
+
     def refresh_devices(self):
         self.update_ip_combobox()
         self.update_serial_combobox()
@@ -83,7 +84,6 @@ class App:
             self.ip_combobox.set(ips[0])
 
     def update_serial_combobox(self):
-        # Update serial port combobox with available ports
         available_ports = [port.device for port in serial.tools.list_ports.comports()]
         self.serial_combobox["values"] = available_ports
         if available_ports:
@@ -98,31 +98,58 @@ class App:
                 messagebox.showerror("Error", "Please select both Camera IP and Serial Port.")
                 return
 
-            # Disconnect existing devices
             if self.cam:
                 self.cam.__exit__(None, None, None)
             if self.ser:
                 self.ser.close()
 
-            # Connect to the selected camera
             self.cam = HikCamera(selected_ip)
             self.cam.__enter__()
 
-            # Connect to the selected serial port
             self.ser = serial.Serial(selected_serial_port, baudrate=115200, timeout=None)
 
-            # Start a new thread for the show_frame method
             folder_name = self.file_name_entry.get()
             if folder_name:
                 self.show_frame_thread = threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True)
                 self.show_frame_thread.start()
 
-            # Start a new thread for the serial_read method
+                # Show saved images on frame3
+                self.show_saved_images(folder_name)
+
             self.serial_read_thread = threading.Thread(target=self.serial_read, daemon=True)
             self.serial_read_thread.start()
 
         except Exception as e:
             messagebox.showerror("Error", f"Error connecting devices: {str(e)}")
+
+    def show_saved_images(self, folder_path):
+        frame3 = ttk.Frame(self.root, padding="10")
+        frame3.grid(row=0, column=1, rowspan=2)
+
+        image_matrix = [[30, 21, 20, 11, 10, 1],
+                        [29, 22, 19, 12, 9, 2],
+                        [28, 23, 18, 13, 8, 3],
+                        [27, 24, 17, 14, 7, 4],
+                        [26, 25, 16, 15, 6, 5]]
+
+        for i in range(len(image_matrix)):
+            for j in range(len(image_matrix[0])):
+                image_index = image_matrix[i][j]
+                image_path = os.path.join(folder_path, f'{folder_path}_{image_index}.png')
+
+                if os.path.isfile(image_path):
+                    img = cv2.imread(image_path)
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    img = Image.fromarray(img)
+                    img = img.resize((100, 100), Image.LANCZOS)
+                    img = ImageTk.PhotoImage(img)
+
+                    label = ttk.Label(frame3, image=img)
+                    label.grid(row=i, column=j, padx=5, pady=5)
+
+                    label.image = img
+                else:
+                    print(f"Image not found: {image_path}")
 
     def create_folder(self):
         try:
@@ -162,7 +189,7 @@ class App:
             except Exception as e:
                 print(f"Error during frame retrieval: {str(e)}")
 
-            time.sleep(0.1)  # Adjust the sleep time based on your requirements
+            time.sleep(0.1)
 
     def serial_read(self):
         try:
@@ -171,7 +198,6 @@ class App:
                     if self.ser.is_open:
                         line = self.ser.readline().decode('utf-8').strip()
                         if line:
-                            # print(f"Received data: {line}")
                             self.state = int(line)
                 except serial.SerialException as se:
                     print(f"Serial reading error: {str(se)}")
@@ -180,8 +206,6 @@ class App:
                 except KeyboardInterrupt:
                     print("Serial reading stopped by the user.")
                 finally:
-                    # Avoid closing the serial connection in each iteration
-                    # time.sleep(1)  # Add a delay to avoid excessive CPU usage
                     pass
         except Exception as e:
             print(f"Error in serial_read: {str(e)}")
@@ -194,7 +218,6 @@ class App:
         if self.ser:
             self.ser.close()
 
-        # Join threads before exiting
         if self.show_frame_thread:
             self.show_frame_thread.join()
         if self.serial_read_thread:
