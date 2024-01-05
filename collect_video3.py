@@ -20,7 +20,7 @@ def serail_read(ser):
             line = ser.readline().decode('utf-8').strip()
             if line:
                 state = int(line)
-                # print(f"Received data: {line}")
+                print(f"Received data: {line}")
             # time.sleep(0.1)  # Adjust the sleep time based on your requirements
     except KeyboardInterrupt:
         print("Serial reading stopped by the user.")

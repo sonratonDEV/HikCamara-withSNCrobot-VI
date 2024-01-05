@@ -36,8 +36,11 @@ class App:
         self.file_name_entry.grid(row=0, column=1, padx=5, pady=5)
 
         # Button to create a folder
-        create_folder_button = ttk.Button(frame1, text="Create Folder", command=self.create_folder)
+        create_folder_button = ttk.Button(frame1, text="Set Folder", command=self.create_folder)
         create_folder_button.grid(row=0, column=2, columnspan=1, pady=10)
+
+        refresh_button = ttk.Button(frame1, text="Refresh port", command=self.refresh_devices)
+        refresh_button.grid(row=1, column=2, columnspan=1, pady=10)
 
         connect_button = ttk.Button(frame1, text="Connect", command=self.connect_devices)
         connect_button.grid(row=4, column=0, columnspan=2, pady=10)
@@ -110,7 +113,7 @@ class App:
                 threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True).start()
 
             # Start a new thread for the serial_read method
-            threading.Thread(target=self.serial_read, daemon=True).start()
+            threading.Thread(target=self.serial_read, args=(self.ser), daemon=True).start()
 
         except Exception as e:
             messagebox.showerror("Error", f"Error connecting devices: {str(e)}")
@@ -182,5 +185,6 @@ class App:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.geometry('1200x550')
     app = App(root)
     root.mainloop()
