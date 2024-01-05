@@ -6,13 +6,13 @@ import os
 import serial
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from PIL import Image, ImageTk
 import serial.tools.list_ports
 
 # Flag to indicate when to stop the video capture
 exit_flag = False
-screen_fol = '5Jan24_test'
+# screen_fol = '5Jan24_test'
 i = 1
 
 class App:
@@ -24,20 +24,28 @@ class App:
         frame1 = ttk.Frame(root, padding="10")
         frame1.grid(row=0, column=0)
 
-        ttk.Label(frame1, text="Camera IP: ").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(frame1, text="Camera IP: ").grid(row=1, column=0, padx=5, pady=5)
         self.ip_combobox = ttk.Combobox(frame1, state="readonly")
-        self.ip_combobox.grid(row=0, column=1, padx=5, pady=5)
+        self.ip_combobox.grid(row=1, column=1, padx=5, pady=5)
 
-        ttk.Label(frame1, text="Serial Port: ").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(frame1, text="Serial Port: ").grid(row=2, column=0, padx=5, pady=5)
         self.serial_combobox = ttk.Combobox(frame1, state="readonly")
-        self.serial_combobox.grid(row=1, column=1, padx=5, pady=5)
+        self.serial_combobox.grid(row=2, column=1, padx=5, pady=5)
+
+        ttk.Label(frame1, text="File Name: ").grid(row=0, column=0, padx=5, pady=5)
+        self.file_name_entry = ttk.Entry(frame1)
+        self.file_name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # Button to create a folder
+        create_folder_button = ttk.Button(frame1, text="Create Folder", command=self.create_folder)
+        create_folder_button.grid(row=0, column=2, columnspan=1, pady=10)
 
         connect_button = ttk.Button(frame1, text="Connect", command=self.connect_devices)
-        connect_button.grid(row=2, column=0, columnspan=2, pady=10)
+        connect_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         # Frame 2: Camera frame display
         frame2 = ttk.Frame(root, padding="10")
-        frame2.grid(row=0, column=1)
+        frame2.grid(row=1, column=0)
 
         # Create a label to display the camera feed
         self.label = ttk.Label(frame2)
@@ -56,6 +64,9 @@ class App:
         self.state = None
 
         # Initialize IP and Serial Comboboxes
+        self.refresh_devices()
+
+    def refresh_devices(self):
         self.update_ip_combobox()
         self.update_serial_combobox()
 
@@ -97,7 +108,20 @@ class App:
         except Exception as e:
             messagebox.showerror("Error", f"Error connecting devices: {str(e)}")
 
-    def show_frame(self):
+    def create_folder(self):
+        try:
+            folder_name = self.file_name_entry.get()
+            if not folder_name:
+                messagebox.showerror("Error", "Please enter a folder name.")
+                return
+
+            folder_path = os.path.join(os.getcwd(), folder_name)
+            os.makedirs(folder_path, exist_ok=True)
+            messagebox.showinfo("Success", f"Folder '{folder_name}' created successfully.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error creating folder: {str(e)}")
+
+    def show_frame(self, folder_name):
         while not exit_flag:
             try:
                 rgb = self.cam.robust_get_frame()
@@ -112,7 +136,7 @@ class App:
                     self.label.image = photo
 
                     if self.prev_state is not None and self.prev_state == 0 and self.state == 1:
-                        screen_path = os.path.join(screen_fol, f'{screen_fol}_{i}.png')
+                        screen_path = os.path.join(folder_name, f'{folder_name}_{i}.png')
                         cv2.imwrite(screen_path, cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
                         print(f"Image saved as {screen_path}")
                         i += 1
