@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from PIL import Image, ImageTk
+import serial.tools.list_ports
 
 # Flag to indicate when to stop the video capture
 exit_flag = False
@@ -66,7 +67,7 @@ class App:
 
     def update_serial_combobox(self):
         # Update serial port combobox with available ports
-        available_ports = [f"COM{i + 1}" for i in range(16)]
+        available_ports = [port.device for port in serial.tools.list_ports.comports()]
         self.serial_combobox["values"] = available_ports
         if available_ports:
             self.serial_combobox.set(available_ports[0])
