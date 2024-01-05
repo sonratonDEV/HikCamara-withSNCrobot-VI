@@ -82,7 +82,6 @@ class App:
         if available_ports:
             self.serial_combobox.set(available_ports[0])
 
-
     def connect_devices(self):
         try:
             selected_ip = self.ip_combobox.get()
@@ -110,6 +109,9 @@ class App:
             if folder_name:
                 threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True).start()
 
+            # Start a new thread for the serial_read method
+            threading.Thread(target=self.serial_read, daemon=True).start()
+
         except Exception as e:
             messagebox.showerror("Error", f"Error connecting devices: {str(e)}")
 
@@ -133,7 +135,6 @@ class App:
                 rgb = self.cam.robust_get_frame()
                 if rgb is not None:
                     height, width, _ = rgb.shape
-                    # new_width = 640
                     new_width = 320
                     new_height = int((new_width / width) * height)
                     resized_rgb = cv2.resize(rgb, (new_width, new_height))

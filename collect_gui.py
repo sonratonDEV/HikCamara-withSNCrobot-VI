@@ -78,6 +78,7 @@ class App:
                 line = self.ser.readline().decode('utf-8').strip()
                 if line:
                     self.state = int(line)
+                    print(line)
             except serial.SerialException as se:
                 print(f"Serial reading error: {str(se)}")
             except KeyboardInterrupt:
