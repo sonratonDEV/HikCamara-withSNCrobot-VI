@@ -68,6 +68,10 @@ class App:
         # Initialize IP and Serial Comboboxes
         self.refresh_devices()
 
+        # Create thread variables
+        self.show_frame_thread = None
+        self.serial_read_thread = None
+
     def refresh_devices(self):
         self.update_ip_combobox()
         self.update_serial_combobox()
@@ -105,15 +109,17 @@ class App:
             self.cam.__enter__()
 
             # Connect to the selected serial port
-            self.ser = serial.Serial(selected_serial_port, baudrate=115200, timeout=1)
+            self.ser = serial.Serial(selected_serial_port, baudrate=115200, timeout=None)
 
             # Start a new thread for the show_frame method
             folder_name = self.file_name_entry.get()
             if folder_name:
-                threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True).start()
+                self.show_frame_thread = threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True)
+                self.show_frame_thread.start()
 
             # Start a new thread for the serial_read method
-            threading.Thread(target=self.serial_read, args=(self.ser), daemon=True).start()
+            self.serial_read_thread = threading.Thread(target=self.serial_read, daemon=True)
+            self.serial_read_thread.start()
 
         except Exception as e:
             messagebox.showerror("Error", f"Error connecting devices: {str(e)}")
@@ -159,20 +165,26 @@ class App:
             time.sleep(0.1)  # Adjust the sleep time based on your requirements
 
     def serial_read(self):
-        while not exit_flag:
-            try:
-                line = self.ser.readline().decode('utf-8').strip()
-                if line:
-                    print(f"Received data: {line}")
-                    self.state = int(line)
-            except serial.SerialException as se:
-                print(f"Serial reading error: {str(se)}")
-            except Exception as e:
-                print(f"Unexpected error during serial reading: {str(e)}")
-            except KeyboardInterrupt:
-                print("Serial reading stopped by the user.")
-            finally:
-                self.ser.close()
+        try:
+            while not exit_flag:
+                try:
+                    if self.ser.is_open:
+                        line = self.ser.readline().decode('utf-8').strip()
+                        if line:
+                            # print(f"Received data: {line}")
+                            self.state = int(line)
+                except serial.SerialException as se:
+                    print(f"Serial reading error: {str(se)}")
+                except Exception as e:
+                    print(f"Unexpected error during serial reading: {str(e)}")
+                except KeyboardInterrupt:
+                    print("Serial reading stopped by the user.")
+                finally:
+                    # Avoid closing the serial connection in each iteration
+                    # time.sleep(1)  # Add a delay to avoid excessive CPU usage
+                    pass
+        except Exception as e:
+            print(f"Error in serial_read: {str(e)}")
 
     def exit_app(self):
         global exit_flag
@@ -181,6 +193,13 @@ class App:
             self.cam.__exit__(None, None, None)
         if self.ser:
             self.ser.close()
+
+        # Join threads before exiting
+        if self.show_frame_thread:
+            self.show_frame_thread.join()
+        if self.serial_read_thread:
+            self.serial_read_thread.join()
+
         self.root.destroy()
 
 if __name__ == "__main__":
