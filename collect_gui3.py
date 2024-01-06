@@ -113,9 +113,6 @@ class App:
                 self.show_frame_thread = threading.Thread(target=self.show_frame, args=(folder_name,), daemon=True)
                 self.show_frame_thread.start()
 
-                # Show saved images on frame3
-                self.show_saved_images(folder_name)
-
             self.serial_read_thread = threading.Thread(target=self.serial_read, daemon=True)
             self.serial_read_thread.start()
 
@@ -145,7 +142,7 @@ class App:
                     img = ImageTk.PhotoImage(img)
 
                     label = ttk.Label(frame3, image=img)
-                    label.grid(row=i, column=j, padx=5, pady=5)
+                    label.grid(row=i, column=j, padx=2, pady=2)
 
                     label.image = img
                 else:
@@ -183,7 +180,13 @@ class App:
                         screen_path = os.path.join(folder_name, f'{folder_name}_{i}.png')
                         cv2.imwrite(screen_path, cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
                         print(f"Image saved as {screen_path}")
+                        # Show saved images on frame3
+                        self.show_saved_images(folder_name)
                         i += 1
+                        if i >= 31:
+                            i = 1
+                        else:
+                            pass
                     self.prev_state = self.state
 
             except Exception as e:
